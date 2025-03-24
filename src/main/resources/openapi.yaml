@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
-  title: KDRIVE API
-  description: API documentation for KDRIVE backend
+  title: GED API
+  description: API documentation for GED (Gestion Électronique des Documents)
   version: 1.0.0
 servers:
   - url: https://api.kdrive.com/v1
@@ -10,72 +10,25 @@ servers:
     description: Local Development Server
 
 security:
-  - BearerAuth: []
+  - BearerAuth: [ ]
 
 paths:
-  /auth/login:
-    post:
-      summary: User login with SSO (OKTA, Microsoft Entra)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                provider:
-                  type: string
-                  enum: [OKTA, MicrosoftEntra]
-                token:
-                  type: string
-      responses:
-        "200":
-          description: Successful login
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  accessToken:
-                    type: string
-                  expiresIn:
-                    type: integer
-        "401":
-          description: Unauthorized
-
-  /users:
+  /api/hello:
     get:
-      summary: Get all users
-      security:
-        - BearerAuth: []
+      summary: Returns "Hello World"
       responses:
         "200":
-          description: List of users
+          description: Successful response
           content:
-            application/json:
+            text/plain:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/User"
-    post:
-      summary: Create a new user
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/User"
-      responses:
-        "201":
-          description: User created successfully
+                type: string
 
   /documents:
     get:
-      summary: Retrieve all documents with filtering, sorting, and pagination
+      summary: Retrieve all documents
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: type
           in: query
@@ -106,7 +59,7 @@ paths:
     post:
       summary: Upload a new document
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -123,14 +76,12 @@ paths:
       responses:
         "201":
           description: Document uploaded successfully
-        "400":
-          description: Invalid request
 
   /documents/{id}:
     get:
-      summary: Retrieve a specific document by ID
+      summary: Retrieve a document by ID
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - name: id
           in: path
@@ -144,48 +95,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Document"
-        "404":
-          description: Document not found
 
-    put:
-      summary: Update a document's metadata
+  /import:
+    post:
+      summary: Import documents from a source
       security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Document"
+              type: object
+              properties:
+                source:
+                  type: string
+                  enum: [ FTP, EMAIL, GOOGLE_DRIVE, SHAREPOINT, LOCAL ]
+                config:
+                  type: object
       responses:
-        "200":
-          description: Document updated successfully
-        "400":
-          description: Invalid request
-        "404":
-          description: Document not found
+        "202":
+          description: Import started successfully
 
-    delete:
-      summary: Delete a document
+  /export:
+    post:
+      summary: Export documents to a destination
       security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                destination:
+                  type: string
+                  enum: [ FTP, GOOGLE_DRIVE, SHAREPOINT, LOCAL ]
+                config:
+                  type: object
       responses:
-        "204":
-          description: Document deleted successfully
-        "404":
-          description: Document not found
+        "202":
+          description: Export started successfully
 
 components:
   securitySchemes:
@@ -195,18 +146,6 @@ components:
       bearerFormat: JWT
 
   schemas:
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        role:
-          type: string
-
     Document:
       type: object
       properties:
@@ -224,9 +163,3 @@ components:
         updatedAt:
           type: string
           format: date-time
-        status:
-          type: string
-          enum: [ACTIVE, ARCHIVED, DELETED]
-        metadata:
-          type: object
-          additionalProperties: true
